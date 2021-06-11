@@ -552,27 +552,73 @@ vs_temp VARCHAR2(100) :=p_initcap;
 vs_return VARCHAR2(100); --반환할 대문자로 변환된 문자열 함수
 vn_len NUMBER;
 BEGIN
-
-vn_pos := INSTR(vs_temp, ' ');
-vn_len := LENGTH(vs_temp);
---vs_return := UPPER(SUBSTR(vs_temp, 1,1));
---vs_return := SUBSTR(vs_temp, 2, vn_len -1);
-vs_return :=UPPER(SUBSTR(vs_temp, 1,1)) ||  SUBSTR(vs_temp, 2, vn_len -1);
-RETURN vs_return;
-END;
+    WHILE vn_pos <> 0 --공백 문자를 발견하지 못할 때 까지 루프를돈다
+    LOOP
+    --공백문자의 위치를 가져온다
+    vn_pos := INSTR(vs_temp, ' ');
+    IF vn_pos = 0 THEN
+       vs_return := vs_return || UPPER(SUBSTR(vs_temp, 1, 1)) || SUBSTR(vs_temp, 2, vn_len -1);
+    ELSE 
+        vs_return := vs_return || UPPER(SUBSTR(vs_temp, 1, 1)) || SUBSTR(vs_temp, 2, vn_pos -2) || ' ';
+    END IF;
+    
+    vn_len := LENGTH(vs_temp);
+    vs_temp := SUBSTR(vs_temp, vn_pos+1, vn_len - vn_pos);
+  
+  END LOOP;  
+  RETURN vs_return;
+  END;
+  
 /
 SELECT my_initcap('happy birthday to you') my_initcap
-FROM DUAL;
+FROM DUAL; 
 /
 --문제 풀이 3번
-CREATE OR REPLACE FUNCTION my_last_day(p_last_day VARCHAR2)
+CREATE OR REPLACE FUNCTION my_last_day(ps_input_day VARCHAR2)
 RETURN VARCHAR2
 IS 
-vn_last VARCHAR2(20);
+vs_input_date VARCHAR2(10) := ps_input_day ;
+vs_return_date VARCHAR(50);
+vs_temp_year   VARCHAR2(4);
+vs_temp_month VARCHAR2(2);
+
 BEGIN
-vn_last :=  LAST_DAY (p_last_day);
-RETURN vn_last ;
+--입력일자에서 '-'를 제거
+    vs_input_date := replace(vs_input_date,'-','')
+
+--입력일자에서 '-'을 제거한 문자열 길이가 8이 아닌경우, 오류 메세지 출력
+    IF LENGTH(vs_input_date) <> 8 THEN
+        vs_return_date := '입력일자 오류';
+    ELSE
+        -- 년도를 가져옴
+        vs_temp_year := SUBSTR(vs_input_date, 1, 4);
+        -- 월을 가져옴
+        vs_temp_month := SUBSTR(vs_input_date, 5 , 2);
+        
+        --월이 12월이면
+        IF vs_temp_month = '12' THEN
+            vs_temp_year := TO_CHAR(TO_NUMBER(vs_temp_year) + 1);
+            vs_temp_month := '01';
+        ELSE
+            vs_temp_month := TRIM(TO_CHAR(TO_NUMBER(vs_temp_month) + 1, '00'));
+            END IF;
+    
+            --해당 월에 따라서 날짜가 다름
+            --년도 + 다음월1일 - 1일 해당월 마지막 일자가 나옴
+            vs_return_date := TO_CHAR(TO_DATE(vs_temp_year || vs_temp_month || '01','YYYY-MM-DD') - 1, 'YYYYMMDD')
+    END IF;
+
+RETURN vs_return_date ;
+COMMIT;
 end;
 /
-SELECT my_lsat_day('20210202')
+SELECT my_last_day('20110101') "라스트 데이" 
 FROM DUAL;
+/
+--문제풀이 4번
+CREATE TABLE ch09_dept (
+     DEPARTMENT_ID   NUMBER,
+     DEPARTMENT_NAME VARCHAR2(100),
+     LEVELS          NUMBER
+);
+
