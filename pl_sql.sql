@@ -616,9 +616,48 @@ SELECT my_last_day('20110101') "라스트 데이"
 FROM DUAL;
 /
 --문제풀이 4번
-CREATE TABLE ch09_dept (
-     DEPARTMENT_ID   NUMBER,
-     DEPARTMENT_NAME VARCHAR2(100),
-     LEVELS          NUMBER
-);
 
+--문제풀이 5번
+
+--문제풀이 6번
+/*부서 테이블의 복사본 테이블을 다음과 같이 만들어 보자.
+CREATE TABLE CH09_departments AS
+SELECT DEPARTMENT_ID, DEPARTMENT_NAME, PARENT_ID
+    FROM DEPARTMENTS;
+
+위 테이블을 대상으로 다음과 같은 처리를 하는 프로시저를 my_dept_manage_proc라는 이름으로 만들어보자
+1 매개변수:부서번호, 부서명, 상위부서번호, 동작flag
+2. 동작 flag 매개변수 값은'upsert'  - 데이터가 있으면 UPDATE, 아니면 INSERT
+                        'delete' - 해당 부서 삭제
+3.삭제시 , 만약 해당 부서에 속한 사원이 존재하는지 사원 테이블을 체크해 존재하면 경고 메세지와 함께
+delete를 하지 않는다.
+*/
+CREATE TABLE ch_09_departments AS
+SELECT department_id, department_name,parent_id
+FROM departments;
+
+select *
+FROM  ch_09_departments;
+/
+CREATE OR REPLACE PROCEDURE my_dept_manage_proc
+(p_dep_id IN  departments.department_id%TYPE,
+p_dep_name IN  departments.department_name%TYPE,
+p_parent_id IN  departments.parent_id%TYPE,
+p_flag IN  VARCHAR2)
+IS
+BEGIN
+IF UPPER(p_flag) ='upsert' then
+    MERGE INTO ch_09_departments a
+    USING(SELECT p_dep_id AS department_id from dual)bb
+    ON  (a.department_id = b.dep_id)
+    WHEN MATCHED THEN
+    UPDATE SET a.departtment_name = p_dep_name,
+                    a.parent_id = p_parnet_id
+    WHEN NOT MATCHED THEN
+    INSERT (a.department_id, a.departtment_name,a.parent_id)
+    VALUES( b.dep_id, p_dep_name,p_parnet_id);
+ELSIF UPPER(p_flag) = 'delete;' then
+
+end;
+/
+EXEC my_dept_manage_proc(2800, 'IT', '기획부',90)
